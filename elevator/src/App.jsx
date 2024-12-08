@@ -4,6 +4,7 @@ import Elevator from './components/elevator'
 
 function App() {
   const [totalElevator, setTotalEvelator] = useState({})
+  const [arrayOfSelectedFloor, setArrayOfSelectedFloor] = useState(Array.from({ length: 10 }))
   const [elevatorLocation, setElevatorLocation] = useState({
     1: { floor: 0, isElevatorActive: false },
     2: { floor: 0, isElevatorActive: false },
@@ -45,23 +46,50 @@ function App() {
   const refSetInterval = useRef()
 
   function handleSelectFloor(selectedFloor) {
+    const copySelectedFloor = [...arrayOfSelectedFloor]
+    copySelectedFloor[selectedFloor] = 'pending'
+
+    setArrayOfSelectedFloor(copySelectedFloor)
     const nearestElevator = findNearestElevator(elevatorLocation, selectedFloor);
+    console.log(nearestElevator)
     const { elevatorId, floor, isElevatorActive } = nearestElevator
-    refSetTimeout[elevatorId] = setTimeout(() => handleRemoveActive(elevatorId), 1000)
+    refSetTimeout[elevatorId] = setTimeout(() => handleRemoveActive(elevatorId, selectedFloor), selectedFloor * 500)
     refSetInterval[elevatorId] = setInterval(() => handleInterval(elevatorId, selectedFloor), 500)
   }
 
   function handleInterval(id, selectedFloorForCount) {
-    delete refSetInterval[id]
-    clearInterval(refSetInterval[id])
-    setElevatorLocation(prev => ({ ...prev, [id]: { floor: prev[id].floor < selectedFloorForCount ? prev[id].floor += 1 : selectedFloorForCount, isElevatorActive: true } }))
+    setElevatorLocation((prev) => {
+      let currentFloor = prev[id].floor
+
+      if (currentFloor >= selectedFloorForCount) {
+        clearInterval(refSetInterval[id])
+        delete refSetInterval[id];
+        return { ...prev, [id]: { floor: selectedFloorForCount, isElevatorActive: true } }
+      }
+
+      return { ...prev, [id]: { floor: currentFloor += 1, isElevatorActive: true } }
+    })
   }
 
-  function handleRemoveActive(id) {
+  function handleRemoveActive(id, floor) {
+    setArrayOfSelectedFloor(prev => [...prev, prev[floor] = 'arrived'])
+    let audio = new Audio("https://audio-previews.elements.envatousercontent.com/files/148785970/preview.mp3");
+    audio.play();
+    setElevatorLocation(prev => ({ ...prev, [id]: { ...prev[id], isElevatorActive: false } }))
     delete refSetTimeout[id]
     clearTimeout(refSetTimeout[id])
-    setElevatorLocation(prev => ({ ...prev, [id]: { ...prev[id], isElevatorActive: false } }))
+    handleRemove(id, floor)
   }
+
+  function handleRemove(id, floor) {
+    let intervalid = setTimeout(() => {
+      setArrayOfSelectedFloor(prev => [...prev, prev[floor] = undefined])
+    }, 2000)
+  }
+
+  useEffect(() => {
+    console.log(elevatorLocation)
+  }, [elevatorLocation])
 
   return (
     <>
@@ -72,7 +100,7 @@ function App() {
               <div className='flex flex-col'>
                 {
                   totalElevator[ele].map((floor) => {
-                    return <Elevator floor={floor} ele={ele} elevatorLocation={elevatorLocation} handleSelectFloor={handleSelectFloor} />
+                    return <Elevator arrayOfSelectedFloor={arrayOfSelectedFloor} floor={floor} ele={ele} elevatorLocation={elevatorLocation} handleSelectFloor={handleSelectFloor} />
                   })
                 }
               </div>
