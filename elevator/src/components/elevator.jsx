@@ -1,5 +1,5 @@
 import React from 'react'
-import ElevatorSvg from '../assets/elevator'
+import { ElevatorSvg } from '../assets/elevator'
 
 function Elevator({ floor, ele, elevatorLocation, handleSelectFloor, arrayOfSelectedFloor }) {
     if (ele == 1) {
@@ -23,7 +23,7 @@ function Elevator({ floor, ele, elevatorLocation, handleSelectFloor, arrayOfSele
 
     if (ele == 7) {
         return (
-            <button className={`w-24 h-20 flex justify-center items-center ${arrayOfSelectedFloor[floor] == 'pending' ? 'bg-red-600' : arrayOfSelectedFloor[floor] == 'arrived' ? 'bg-transparent border' : 'bg-green-500'} ml-3`} onClick={() => handleSelectFloor(floor)}>
+            <button disabled={arrayOfSelectedFloor[floor] !== undefined && true} className={`w-24 h-20 flex justify-center items-center ${arrayOfSelectedFloor[floor] == 'pending' ? 'bg-red-600' : arrayOfSelectedFloor[floor] == 'arrived' ? 'bg-transparent border' : 'bg-green-500'} ml-3`} onClick={() => handleSelectFloor(floor)}>
                 {arrayOfSelectedFloor[floor] == 'pending' ? 'Waiting' : arrayOfSelectedFloor[floor] == 'arrived' ? 'Arrived' : "Call"}
             </button>
         )
