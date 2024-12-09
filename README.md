@@ -1,43 +1,50 @@
-# Elevator System Task
+# React + TypeScript + Vite
 
-## Requirements
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-### 1. Building Setup
-- The building has 10 floors (including ground floor) and 5 elevators.
+Currently, two official plugins are available:
 
-### 2. Elevator Call Button
-- Near each floor, present a green button to call an elevator.
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-### 3. Calling an Elevator
-- Change the “call” button to red, and change the text to “waiting”.
-- Identify the closest elevator to the floor, and send the elevator to that floor.
-    - There's a chance all the elevators will be occupied at that moment.
-    - Do not miss any calls (use a queue?).
-  
-### 4. Elevator Movement
-- The elevator should move toward the selected floor in a smooth movement.
-- Measure the time it took the elevator to reach the designated floor.
-- Change the elevator color to red.
+## Expanding the ESLint configuration
 
-### 5. Elevator Reached the Floor
-- Make a sound when the elevator reaches the floor.
-- Change the elevator color to green.
-- Wait 2 seconds before moving to the next call (if any).
-- Change the button text to “arrived” and adjust the design according to the following specifications.
-  
-### 6. After 2 Seconds
-- After 2 seconds, change the elevator color back to black, and change the button text to “call”, reverting to the initial design.
+If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
 
-## Objective
-The purpose of this exercise is to test the infrastructure and the design of your code. The solution should also work as expected.
+- Configure the top-level `parserOptions` property like this:
 
-### Note:
-- This work needs to be done as soon as possible.
-- **Do not use any AI tools**.
+```js
+export default tseslint.config({
+  languageOptions: {
+    // other options...
+    parserOptions: {
+      project: ['./tsconfig.node.json', './tsconfig.app.json'],
+      tsconfigRootDir: import.meta.dirname,
+    },
+  },
+})
+```
 
-### Reference:
-[Elevator System Example](https://elevator-exercise.vercel.app/)
+- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
+- Optionally add `...tseslint.configs.stylisticTypeChecked`
+- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
 
-## Technology Stack
-- Vanilla (Native JS)
-- React JS
+```js
+// eslint.config.js
+import react from 'eslint-plugin-react'
+
+export default tseslint.config({
+  // Set the react version
+  settings: { react: { version: '18.3' } },
+  plugins: {
+    // Add the react plugin
+    react,
+  },
+  rules: {
+    // other rules...
+    // Enable its recommended rules
+    ...react.configs.recommended.rules,
+    ...react.configs['jsx-runtime'].rules,
+  },
+})
+```
