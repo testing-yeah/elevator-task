@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useEffect, useState } from "react";
 import "./App.css";
 import Elevator from "./components/Elevator";
@@ -25,72 +26,88 @@ function App() {
   }>({});
 
   useEffect(() => {
-    const obj: ElevatorData = {};
-    for (let i = 1; i <= 7; i++) {
-      const arr: number[] = [];
-      for (let j = 1; j <= 10; j++) {
-        arr.push(10 - j);
-      }
-      obj[i] = arr;
-    }
-    setTotalElevator(obj);
+    setTotalElevator(
+      Array.from({ length: 7 }, (_, i) => ({
+        [i + 1]: Array.from({ length: 10 }, (_, j) => 9 - j),
+      })).reduce((acc, obj) => ({ ...acc, ...obj }), {})
+    );
   }, []);
 
   const handleClick = (floor: number) => {
-    const copySelectedFloors = { ...selectedFloors };
-    copySelectedFloors[floor] = "pending";
-    setSelectedFloors(copySelectedFloors);
+    if (selectedFloors[floor] === "pending") return;
 
-    // Find an idle elevator to move
-    const availableElevator = Object.keys(elevatorLocation).find(
-      (key) => !elevatorLocation[parseInt(key)].isElevatorActive
+    setSelectedFloors((prev) => ({ ...prev, [floor]: "pending" }));
+
+    const nearestElevator = Object.entries(elevatorLocation).reduce(
+      (
+        closestElevator: { elevatorId: number | null; distance: number },
+        [elevatorIdStr, { floor: currentFloor, isElevatorActive }]
+      ) => {
+        const elevatorId = parseInt(elevatorIdStr, 10);
+
+        if (isElevatorActive) return closestElevator;
+
+        const distance =
+          currentFloor < floor ? floor - currentFloor : currentFloor - floor;
+
+        if (!closestElevator || distance < closestElevator.distance) {
+          return { elevatorId, distance };
+        }
+
+        return closestElevator;
+      },
+      { elevatorId: null, distance: Infinity }
     );
 
-    if (availableElevator) {
-      const elevatorId = parseInt(availableElevator);
-      moveElevator(elevatorId, floor);
+    if (nearestElevator.elevatorId !== null) {
+      moveElevator(nearestElevator.elevatorId, floor);
     }
   };
 
   const moveElevator = (elevatorId: number, targetFloor: number) => {
-    const currentLocation = elevatorLocation[elevatorId];
-    if (!currentLocation) return;
+    const audio = new Audio(
+      "https://audio-previews.elements.envatousercontent.com/files/148785970/preview.mp3"
+    );
 
-    const updatedLocation = { ...elevatorLocation };
-    updatedLocation[elevatorId].isElevatorActive = true;
-    setElevatorLocation(updatedLocation);
+    if (elevatorLocation[elevatorId]?.isElevatorActive) return;
+
+    setElevatorLocation((prev) => ({
+      ...prev,
+      [elevatorId]: { ...prev[elevatorId], isElevatorActive: true },
+    }));
 
     const moveInterval = setInterval(() => {
       setElevatorLocation((prev) => {
-        const nextLocation = { ...prev };
-
-        const currentFloor = nextLocation[elevatorId].floor;
+        const { floor: currentFloor } = prev[elevatorId];
 
         if (currentFloor === targetFloor) {
           clearInterval(moveInterval);
-          nextLocation[elevatorId].isElevatorActive = false;
 
-          // Update the selected floor state to 'Arrived'
-          setSelectedFloors((prevFloors) => {
-            const updatedFloors = { ...prevFloors };
-            updatedFloors[targetFloor] = "arrived";
-            return updatedFloors;
-          });
+          audio.play();
 
-          // Reset state after a delay
+          setSelectedFloors((prev) => ({ ...prev, [targetFloor]: "arrived" }));
+
           setTimeout(() => {
-            setSelectedFloors((prevFloors) => {
-              const resetFloors = { ...prevFloors };
-              delete resetFloors[targetFloor];
-              return resetFloors;
+            setSelectedFloors((prev) => {
+              const { [targetFloor]: _, ...rest } = prev;
+              return rest;
             });
           }, 2000);
-        } else {
-          nextLocation[elevatorId].floor =
-            currentFloor < targetFloor ? currentFloor + 1 : currentFloor - 1;
+
+          return {
+            ...prev,
+            [elevatorId]: { ...prev[elevatorId], isElevatorActive: false },
+          };
         }
 
-        return nextLocation;
+        return {
+          ...prev,
+          [elevatorId]: {
+            ...prev[elevatorId],
+            floor:
+              currentFloor < targetFloor ? currentFloor + 1 : currentFloor - 1,
+          },
+        };
       });
     }, 1000);
   };
@@ -102,26 +119,20 @@ function App() {
       </h1>
 
       <div className="flex justify-center items-center mt-5">
-        {totalElevator &&
-          Object.keys(totalElevator).map((elevator) => {
-            const elevatorId = parseInt(elevator);
-            return (
-              <div className="flex flex-col" key={elevatorId}>
-                {totalElevator[elevatorId].map((TotalFloor, index) => {
-                  return (
-                    <Elevator
-                      key={index}
-                      TotalFloor={TotalFloor}
-                      elevator={elevatorId}
-                      elevatorLocation={elevatorLocation}
-                      selectedFloors={selectedFloors}
-                      handleClickSelectedFloor={handleClick}
-                    />
-                  );
-                })}
-              </div>
-            );
-          })}
+        {Object.entries(totalElevator).map(([elevator, floors]) => (
+          <div className="flex flex-col" key={elevator}>
+            {floors.map((TotalFloor: number, index: number) => (
+              <Elevator
+                key={index}
+                TotalFloor={TotalFloor}
+                elevator={parseInt(elevator)}
+                elevatorLocation={elevatorLocation}
+                selectedFloors={selectedFloors}
+                handleClickSelectedFloor={handleClick}
+              />
+            ))}
+          </div>
+        ))}
       </div>
     </div>
   );
