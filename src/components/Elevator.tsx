@@ -1,11 +1,16 @@
 import ElevatorSvg from "../assets/elevator";
 
 type ElevatorLocation = {
-    [key: number]: { floor: number; isElevatorActive: boolean };
+    [key: number]: {
+        floor: number;
+        isElevatorActive: boolean;
+        destinationFloor?: number;
+        differenceFloor?: number;
+    };
 };
 
 type ElevatorProps = {
-    TotalFloor: number;
+    floors: number;
     elevator: number;
     elevatorLocation: ElevatorLocation;
     selectedFloors: { [key: number]: string };
@@ -13,7 +18,7 @@ type ElevatorProps = {
 };
 
 const Elevator: React.FC<ElevatorProps> = ({
-    TotalFloor,
+    floors,
     elevator,
     elevatorLocation,
     selectedFloors,
@@ -21,37 +26,47 @@ const Elevator: React.FC<ElevatorProps> = ({
 }) => {
     if (elevator === 1) {
         return (
-            <div className="w-24 h-20 flex justify-center items-center">
-                {TotalFloor === 0 ? "Ground Floor" : `Floor ${TotalFloor}`}
+            <div className="w-24 h-16 flex justify-center items-center">
+                {floors === 0 ? "Ground Floor" : `Floor ${floors}`}
             </div>
         );
     }
 
     if (elevator > 1 && elevator < 7) {
-        const isAtCurrentFloor = elevatorLocation[elevator]?.floor === TotalFloor;
+        const isAtCurrentFloor = elevatorLocation[elevator]?.floor === floors;
+        const travelTime = (elevatorLocation[elevator]?.differenceFloor ?? 0) * 500;
 
         return (
-            <div className="w-24 h-20 border border-gray-400 flex justify-center items-center">
+            <div className="w-32 h-16 border border-gray-400 flex justify-center items-center">
                 {isAtCurrentFloor && (
                     <div className="w-12">
                         <ElevatorSvg />
                     </div>
                 )}
+                {!isAtCurrentFloor &&
+                    elevatorLocation[elevator]?.destinationFloor == floors && (
+                        <div>{travelTime} Sec</div>
+                    )}
             </div>
         );
     }
 
     if (elevator === 7) {
-        const floorStatus = selectedFloors[TotalFloor] || "";
+        const floorStatus = selectedFloors[floors] || "";
+        const isButtonDisabled =
+            selectedFloors[floors] === "pending" ||
+            selectedFloors[floors] === "arrived";
+
         return (
             <button
-                className={`w-24 h-20 flex justify-center items-center ${floorStatus === "pending"
-                        ? "bg-red-600"
-                        : floorStatus === "arrived"
-                            ? "bg-transparent border"
-                            : "bg-green-500"
+                className={`w-28 h-16 flex justify-center items-center ${floorStatus === "pending"
+                    ? "bg-red-600"
+                    : floorStatus === "arrived"
+                        ? "bg-transparent border"
+                        : "bg-green-500"
                     } ml-3`}
-                onClick={() => handleClickSelectedFloor(TotalFloor)}
+                onClick={() => handleClickSelectedFloor(floors)}
+                disabled={isButtonDisabled}
             >
                 {floorStatus === "pending"
                     ? "Waiting"
