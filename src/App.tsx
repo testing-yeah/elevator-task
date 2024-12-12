@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import "./App.css";
 import Elevator from "./components/Elevator";
 
-// Types for state
 type ElevatorData = {
   [key: number]: number[];
 };
@@ -19,7 +18,6 @@ type ElevatorLocation = {
 
 function App() {
   const [totalElevator, setTotalElevator] = useState<ElevatorData>({});
-
   const [elevatorLocation, setElevatorLocation] = useState<ElevatorLocation>({
     2: { floor: 0, isElevatorActive: false },
     3: { floor: 0, isElevatorActive: false },
@@ -27,63 +25,91 @@ function App() {
     5: { floor: 0, isElevatorActive: false },
     6: { floor: 0, isElevatorActive: false },
   });
-
   const [selectedFloors, setSelectedFloors] = useState<{
     [key: number]: string;
   }>({});
+  const [pendingFloors, setPendingFloors] = useState<number[]>([]);
 
   useEffect(() => {
-    setTotalElevator(
-      Array.from({ length: 7 }, (_, i) => ({
-        [i + 1]: Array.from({ length: 10 }, (_, j) => 9 - j),
-      })).reduce((acc, obj) => ({ ...acc, ...obj }), {})
-    );
+    const obj: ElevatorData = {};
+    for (let i = 1; i <= 7; i++) {
+      const Arr = [];
+      for (let j = 1; j <= 10; j++) {
+        Arr.push(10 - j);
+      }
+      obj[i] = Arr;
+    }
+    setTotalElevator(obj);
   }, []);
 
+  useEffect(() => {
+    const processPendingFloors = () => {
+      if (pendingFloors.length === 0) return;
+
+      for (const floor of pendingFloors) {
+        const nearestElevator = findNearestElevator(floor);
+
+        if (nearestElevator.elevatorId !== null) {
+          setPendingFloors((prev) => prev.filter((f) => f !== floor));
+          assignElevatorToFloor(
+            nearestElevator.elevatorId,
+            floor,
+            nearestElevator.distance
+          );
+          break;
+        }
+      }
+    };
+
+    const id = setInterval(processPendingFloors, 100);
+    return () => clearInterval(id);
+  }, [pendingFloors, elevatorLocation]);
+
   const handleClick = (floor: number) => {
-    if (isElevatorAtFloorInactive(floor)) {
-      setTimeout(() => {
-        setSelectedFloors((prev) => {
-          const { [floor]: _, ...rest } = prev;
-          return rest;
-        });
-      }, 2000);
-
-      return;
-    }
-
-    setSelectedFloors((prevSelectedFloor) => ({
-      ...prevSelectedFloor,
+    setSelectedFloors((prev) => ({
+      ...prev,
       [floor]: "pending",
     }));
 
     const nearestElevator = findNearestElevator(floor);
 
-    setElevatorLocation((prev) => ({
-      ...prev,
-      [nearestElevator.elevatorId as number]: {
-        ...prev[nearestElevator.elevatorId as number],
-        destinationFloor: floor,
-        differenceFloor: nearestElevator.distance,
-      },
-    }));
-
     console.log("nearestElevator", nearestElevator);
 
-    if (nearestElevator.elevatorId !== null) {
-      moveElevator(nearestElevator.elevatorId, floor);
+    if (nearestElevator.elevatorId === null) {
+      setPendingFloors((prev) => [...prev, floor]);
+    } else {
+      assignElevatorToFloor(
+        nearestElevator.elevatorId,
+        floor,
+        nearestElevator.distance
+      );
     }
   };
 
-  // Function to check if any elevator is inactive at the selected floor
-  const isElevatorAtFloorInactive = (floor: number) => {
-    return Object.entries(elevatorLocation).find(
-      ([, { floor: currentFloor, isElevatorActive }]) =>
-        currentFloor === floor && !isElevatorActive
-    );
+  const assignElevatorToFloor = (
+    elevatorId: number | null,
+    floor: number,
+    distance: number
+  ) => {
+    if (elevatorId === null) return;
+
+    setSelectedFloors((prev) => ({
+      ...prev,
+      [floor]: "pending",
+    }));
+
+    setElevatorLocation((prev) => ({
+      ...prev,
+      [elevatorId]: {
+        ...prev[elevatorId],
+        destinationFloor: floor,
+        differenceFloor: distance,
+      },
+    }));
+
+    moveElevator(elevatorId, floor);
   };
 
-  // Function to find the nearest available elevator
   const findNearestElevator = (floor: number) => {
     return Object.entries(elevatorLocation).reduce(
       (
@@ -94,8 +120,7 @@ function App() {
 
         if (isElevatorActive) return closestElevator;
 
-        const distance =
-          currentFloor > floor ? currentFloor - floor : floor - currentFloor;
+        const distance = Math.abs(currentFloor - floor);
 
         if (
           closestElevator.elevatorId === null ||
@@ -137,15 +162,15 @@ function App() {
           }));
 
           setTimeout(() => {
-            setSelectedFloors((prev) => {
-              const { [targetFloor]: _, ...rest } = prev;
-              return rest;
-            });
-
             setElevatorLocation((prev) => ({
               ...prev,
               [elevatorId]: { ...prev[elevatorId], isElevatorActive: false },
             }));
+
+            setSelectedFloors((prev) => {
+              const { [targetFloor]: _, ...rest } = prev;
+              return rest;
+            });
           }, 2000);
 
           return prev;
@@ -170,9 +195,9 @@ function App() {
       </h1>
 
       <div className="flex justify-center items-center mt-5">
-        {Object.entries(totalElevator).map(([elevator, floor]) => (
+        {Object.entries(totalElevator)?.map(([elevator, floor]) => (
           <div className="flex flex-col" key={elevator}>
-            {floor.map((floors: number, index: number) => (
+            {floor?.map((floors: number, index: number) => (
               <Elevator
                 key={index}
                 floors={floors}

@@ -24,9 +24,11 @@ const Elevator: React.FC<ElevatorProps> = ({
     selectedFloors,
     handleClickSelectedFloor,
 }) => {
+    const floorStatus = selectedFloors[floors] || "";
+
     if (elevator === 1) {
         return (
-            <div className="w-24 h-16 flex justify-center items-center">
+            <div className="w-28 h-16 font-medium flex justify-center items-center">
                 {floors === 0 ? "Ground Floor" : `Floor ${floors}`}
             </div>
         );
@@ -34,13 +36,22 @@ const Elevator: React.FC<ElevatorProps> = ({
 
     if (elevator > 1 && elevator < 7) {
         const isAtCurrentFloor = elevatorLocation[elevator]?.floor === floors;
-        const travelTime = (elevatorLocation[elevator]?.differenceFloor ?? 0) * 500;
+
+        const travelTime =
+            ((elevatorLocation[elevator]?.differenceFloor ?? 0) * 500) / 1000;
+
+        const svgColor =
+            floorStatus === "arrived"
+                ? "green"
+                : elevatorLocation[elevator]?.isElevatorActive || floorStatus === "pending"
+                    ? "red"
+                    : "black";
 
         return (
             <div className="w-32 h-16 border border-gray-400 flex justify-center items-center">
                 {isAtCurrentFloor && (
                     <div className="w-12">
-                        <ElevatorSvg />
+                        <ElevatorSvg color={svgColor} />
                     </div>
                 )}
                 {!isAtCurrentFloor &&
@@ -52,14 +63,13 @@ const Elevator: React.FC<ElevatorProps> = ({
     }
 
     if (elevator === 7) {
-        const floorStatus = selectedFloors[floors] || "";
         const isButtonDisabled =
             selectedFloors[floors] === "pending" ||
             selectedFloors[floors] === "arrived";
 
         return (
             <button
-                className={`w-28 h-16 flex justify-center items-center ${floorStatus === "pending"
+                className={`w-28 h-16 flex font-medium justify-center items-center ${floorStatus === "pending"
                     ? "bg-red-600"
                     : floorStatus === "arrived"
                         ? "bg-transparent border"
